@@ -32,7 +32,8 @@ export default defineConfig({
   ],
   server: {
     port: 5173,
-    proxy: { '/api': `http://localhost:${API_PORT}` },
+    // changeOrigin stays false so the API's same-origin check sees the browser's Host.
+    proxy: { '/api': { target: `http://localhost:${API_PORT}`, changeOrigin: false } },
   },
   build: { outDir: 'dist', sourcemap: false },
   test: {

@@ -10,8 +10,12 @@ import { istDate } from '../../shared/time';
 import { api, HttpError } from './api';
 
 const store = createStore('collect-assist', 'kv');
-const PENDING = 'outbox.pending';
-const DONE = 'outbox.done'; // recent server answers, newest first
+// Keys are per signed-in user, so one officer's unsent logs never go out under another's session.
+let userKey = 'anon';
+const PENDING_BASE = 'outbox.pending';
+const DONE_BASE = 'outbox.done'; // recent server answers, newest first
+const pendingKey = () => `${PENDING_BASE}.${userKey}`;
+const doneKey = () => `${DONE_BASE}.${userKey}`;
 const MAX_DONE = 50;
 
 export interface DoneItem {
@@ -59,8 +63,8 @@ export function subscribeOutbox(fn: (s: OutboxStatus) => void): () => void {
 
 async function load() {
   const [pending, recent] = await Promise.all([
-    get<AttemptInput[]>(PENDING, store),
-    get<DoneItem[]>(DONE, store),
+    get<AttemptInput[]>(pendingKey(), store),
+    get<DoneItem[]>(doneKey(), store),
   ]);
   emit({ pending: pending ?? [], recent: recent ?? [] });
 }
@@ -76,8 +80,8 @@ export function newId(): string {
 
 /** Save an attempt locally, then try to send it. Never throws for network problems. */
 export async function enqueue(item: AttemptInput): Promise<void> {
-  const pending = [...((await get<AttemptInput[]>(PENDING, store)) ?? []), item];
-  await set(PENDING, pending, store);
+  const pending = [...((await get<AttemptInput[]>(pendingKey(), store)) ?? []), item];
+  await set(pendingKey(), pending, store);
   emit({ pending });
   void syncNow();
 }
@@ -85,7 +89,7 @@ export async function enqueue(item: AttemptInput): Promise<void> {
 /** Send everything pending. Safe to call often; only one sync runs at a time. */
 export async function syncNow(): Promise<void> {
   if (status.syncing) return;
-  const pending = (await get<AttemptInput[]>(PENDING, store)) ?? [];
+  const pending = (await get<AttemptInput[]>(pendingKey(), store)) ?? [];
   if (pending.length === 0) {
     emit({ pending });
     return;
@@ -104,11 +108,11 @@ export async function syncNow(): Promise<void> {
       .filter((i) => answered.has(i.id))
       .map((item) => ({ item, result: answered.get(item.id)!, at }));
     // Re-read in case the officer logged something while we were syncing.
-    const latest = (await get<AttemptInput[]>(PENDING, store)) ?? [];
+    const latest = (await get<AttemptInput[]>(pendingKey(), store)) ?? [];
     const remaining = latest.filter((i) => !answered.has(i.id));
-    const recent = [...done.reverse(), ...((await get<DoneItem[]>(DONE, store)) ?? [])].slice(0, MAX_DONE);
-    await set(PENDING, remaining, store);
-    await set(DONE, recent, store);
+    const recent = [...done.reverse(), ...((await get<DoneItem[]>(doneKey(), store)) ?? [])].slice(0, MAX_DONE);
+    await set(pendingKey(), remaining, store);
+    await set(doneKey(), recent, store);
     retryDelay = 5_000;
     emit({ pending: remaining, recent, syncing: false, online: true, lastSyncAt: at });
     if (remaining.length > 0) void syncNow();
@@ -128,11 +132,14 @@ function scheduleRetry() {
   retryDelay = Math.min(retryDelay * 2, 120_000);
 }
 
-/** Start listening for connectivity changes. Call once after sign-in. */
-export function startOutbox() {
+/** Start the outbox for the signed-in officer. Safe to call again (e.g. after switching users). */
+export function startOutbox(userId: string) {
+  if (started && userKey === userId) return;
+  userKey = userId;
+  emit({ pending: [], recent: [], lastError: null });
+  void load().then(syncNow);
   if (started) return;
   started = true;
-  void load().then(syncNow);
   window.addEventListener('online', () => {
     emit({ online: true });
     retryDelay = 5_000;
