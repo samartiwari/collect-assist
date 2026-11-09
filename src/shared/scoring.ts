@@ -181,6 +181,7 @@ function reasonText(code: string, dir: 'up' | 'down', input: FeatureInput, x: Fe
     }
     case 'paidRatio3m': {
       const pct = Math.round(Math.min(x.paidRatio3m, 1) * 100);
+      if (dir === 'up' && pct === 0) return ['Nothing paid in 3 months', '3 महीनों में कोई किस्त नहीं भरी'];
       if (dir === 'up') return [`Paid only ${pct}% of dues in 3 months`, `3 महीनों में सिर्फ़ ${pct}% किस्त भरी`];
       return pct >= 95
         ? ['Kept up with dues for 3 months', '3 महीनों से किस्त समय पर']

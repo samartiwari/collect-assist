@@ -11,7 +11,7 @@ import { ContactWindowBanner, useContactWindow } from '../../components/ContactW
 import { Icon } from '../../components/Icons';
 import { mapHref, outcomeKey, PromiseChip, reasonText, RiskBadge, telHref, timeOnly, useCallAction } from '../../components/LoanBits';
 import { Empty, ErrorState, SkeletonList } from '../../components/States';
-import { api, formatRupeesShort } from '../../lib/api';
+import { api, businessLine, formatRupeesShort } from '../../lib/api';
 import { useAuth } from '../../lib/auth';
 import { isUnreachable, useNow, useOnline, useOutbox } from '../../lib/hooks';
 import { formatDayLong, plural, useT } from '../../lib/i18n';
@@ -313,7 +313,7 @@ function LoanItem({ loan, rank, today, windowOpen, onCall, onLog }: ItemProps) {
             <h3 className="loan-name" id={nameId}>
               {loan.borrowerName}
             </h3>
-            <p className="loan-sub">{loan.businessType}</p>
+            <p className="loan-sub">{businessLine(loan)}</p>
           </div>
           <RiskBadge score={loan.score} />
         </div>

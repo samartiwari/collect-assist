@@ -100,8 +100,8 @@ const en = {
 
   'card.dpd': '{n} DPD',
   'card.outstanding': '{amount} outstanding',
-  'card.moreReasons': '+{n} reasons',
-  'card.moreReasonOne': '+1 reason',
+  'card.moreReasons': '+{n} more',
+  'card.moreReasonOne': '+1 more',
   'card.pinned': 'Pinned by {name}: {reason}',
   'card.promise': 'Promise {amount} · {date}',
   'card.promiseToday': 'Promise {amount} · due today',
@@ -369,8 +369,8 @@ const hi: Record<MsgKey, string> = {
 
   'card.dpd': '{n} दिन बकाया',
   'card.outstanding': '{amount} बकाया',
-  'card.moreReasons': '+{n} कारण',
-  'card.moreReasonOne': '+1 कारण',
+  'card.moreReasons': '+{n} और',
+  'card.moreReasonOne': '+1 और',
   'card.pinned': '{name} ने ऊपर रखा: {reason}',
   'card.promise': 'वादा {amount} · {date}',
   'card.promiseToday': 'वादा {amount} · आज',

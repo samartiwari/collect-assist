@@ -513,3 +513,6 @@ main:focus { outline: none; }
 .row-badges { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 8px; }
 .row-badges .row-error { flex-basis: 100%; margin-top: 0; }
 .nowrap { white-space: nowrap; }
+
+/* Language lives in the account menu: set once, not needed in the field every minute. */
+.menu-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 4px 2px; }

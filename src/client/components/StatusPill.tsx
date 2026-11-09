@@ -11,7 +11,7 @@ export function StatusPill() {
   const online = browserOnline && outbox.online;
   const n = outbox.pending.length;
 
-  let tone: 'ok' | 'busy' | 'pending' | 'offline';
+  let tone: 'busy' | 'pending' | 'offline';
   let label: string;
   if (!online) {
     tone = 'offline';
@@ -23,8 +23,8 @@ export function StatusPill() {
     tone = 'pending';
     label = t('status.waiting', { n });
   } else {
-    tone = 'ok';
-    label = t('status.synced');
+    // All sent and online: nothing worth the officer's attention, so show nothing.
+    return null;
   }
 
   return (
@@ -33,10 +33,8 @@ export function StatusPill() {
         <span className="spinner status-spinner" aria-hidden="true" />
       ) : tone === 'offline' ? (
         <Icon name="wifi-off" size={16} />
-      ) : tone === 'pending' ? (
-        <Icon name="upload" size={16} />
       ) : (
-        <span className="status-dot" aria-hidden="true" />
+        <Icon name="upload" size={16} />
       )}
       <span className="status-label">{label}</span>
       {n > 0 && <span className="status-count num" aria-hidden="true">{n}</span>}

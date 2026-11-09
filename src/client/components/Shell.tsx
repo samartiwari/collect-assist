@@ -90,6 +90,12 @@ function UserMenu({ user }: { user: SessionUser }) {
               </p>
             </div>
           </div>
+          {user.role === 'officer' && (
+            <div className="menu-row">
+              <span className="small">{t('lang.label')}</span>
+              <LangToggle />
+            </div>
+          )}
           {offlineSession && (
             <p className="banner banner-info tiny">
               <Icon name="wifi-off" size={16} />
@@ -145,7 +151,6 @@ function TopBar({ user, items }: { user: SessionUser; items: NavItem[] }) {
         <div className="topbar-right">
           {isOfficer && <StatusPill />}
           <DemoClock />
-          {isOfficer && <LangToggle />}
           <UserMenu user={user} />
         </div>
       </div>

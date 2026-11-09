@@ -146,7 +146,7 @@ export function PriorityBadge({ priority, title }: { priority: number; title?: s
   const word = level === 'high' ? 'High' : level === 'mid' ? 'Medium' : 'Low';
   return (
     <span className={`badge badge-${level} num`} title={title ?? `${priority}% chance of rolling to 31–60 DPD`}>
-      {priority} · {word}
+      {word} · {priority}
     </span>
   );
 }

@@ -18,7 +18,7 @@ import { useContactWindow } from '../../components/ContactWindowBanner';
 import { Icon } from '../../components/Icons';
 import { mapHref, outcomeKey, PROMISE_BADGE, reasonText, RiskBadge, riskLevel, telHref, useCallAction } from '../../components/LoanBits';
 import { ErrorState, Loading, SkeletonList } from '../../components/States';
-import { api, formatPct, formatRupees, HttpError } from '../../lib/api';
+import { api, businessLine, formatPct, formatRupees, HttpError } from '../../lib/api';
 import { homePath, useAuth } from '../../lib/auth';
 import { errorMessage, isUnreachable, useApi, useOutbox } from '../../lib/hooks';
 import { formatDateMedium, formatDateShort, formatInstant, useT, type MsgKey } from '../../lib/i18n';
@@ -158,7 +158,7 @@ function DetailBody({ data, offline, isOfficer, pending, onCall, onLog, onMessag
         </p>
         <h1>{loan.borrowerName}</h1>
         <p className="muted">
-          {loan.businessType}
+          {businessLine(loan)}
           {!isOfficer && ` · ${loan.officerName ? t('detail.officer', { name: loan.officerName }) : t('detail.unassigned')}`}
         </p>
       </header>

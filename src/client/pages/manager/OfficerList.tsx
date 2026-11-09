@@ -3,7 +3,7 @@ import { useCallback, useState, type FormEvent } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import type { ActivityResponse, LoanCard, PinRequest, ReassignRequest, TeamOfficer, TeamResponse, TodayResponse } from '../../../shared/types';
 import { istDate } from '../../../shared/time';
-import { api, formatRupees } from '../../lib/api';
+import { api, businessLine, formatRupees } from '../../lib/api';
 import { now } from '../../lib/clock';
 import { ActivitySummary, ActivityTable, activityPath } from './Activity';
 import { fmtDay, fmtNum, plural } from './format';
@@ -204,7 +204,7 @@ function ListRow({ loan: l, rank, busy, onPin, onUnpin, onMove }: {
           <span className="mgr-rank-sm num" aria-hidden="true">{rank}.</span>
           <Link to={`/loan/${encodeURIComponent(l.id)}`} className="mgr-borrower">{l.borrowerName}</Link>
         </div>
-        <div className="tiny muted"><span className="mono">{l.id}</span> · {l.businessType}</div>
+        <div className="tiny muted"><span className="mono">{l.id}</span> · {businessLine(l)}</div>
         {l.pinned && (
           <div className="mgr-pinned tiny">
             <Icon name="pin" size={13} /> Pinned by {l.pinned.byName}: “{l.pinned.reason}”
@@ -244,15 +244,17 @@ function ListRow({ loan: l, rank, busy, onPin, onUnpin, onMove }: {
       <td className="cell-wide mgr-actions">
         <div className="row">
           {l.pinned ? (
-            <button type="button" className="btn btn-sm" onClick={onUnpin} disabled={busy}>
-              {busy ? <span className="spinner" aria-hidden="true" /> : null} Unpin
+            <button type="button" className="btn btn-sm btn-ghost" onClick={onUnpin} disabled={busy}>
+              {busy ? <span className="spinner" aria-hidden="true" /> : <Icon name="pin" size={15} />} Unpin
             </button>
           ) : (
-            <button type="button" className="btn btn-sm" onClick={onPin}>
-              <Icon name="pin" size={15} /> Pin to top
+            <button type="button" className="btn btn-sm btn-ghost" onClick={onPin} title="Pin to the top of the officer's list">
+              <Icon name="pin" size={15} /> Pin
             </button>
           )}
-          <button type="button" className="btn btn-sm" onClick={onMove}>Reassign</button>
+          <button type="button" className="btn btn-sm btn-ghost" onClick={onMove} title="Give this loan to another officer">
+            <Icon name="arrow-right" size={15} /> Move
+          </button>
         </div>
       </td>
     </tr>

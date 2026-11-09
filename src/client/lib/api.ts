@@ -50,12 +50,21 @@ export function formatRupees(n: number): string {
   return '₹' + Math.round(n).toLocaleString('en-IN');
 }
 
-/** ₹6.4 L / ₹1.13 Cr style, for tight spaces. */
+/** ₹6.4 L / ₹1.13 Cr for large amounts; smaller amounts in full (₹71,000), as people say them. */
 export function formatRupeesShort(n: number): string {
   if (n >= 1e7) return `₹${(n / 1e7).toFixed(2)} Cr`;
   if (n >= 1e5) return `₹${(n / 1e5).toFixed(1)} L`;
-  if (n >= 1e3) return `₹${(n / 1e3).toFixed(1)}k`;
-  return `₹${Math.round(n)}`;
+  return formatRupees(Math.round(n / 100) * 100);
+}
+
+/** Locality from an address like "177, Bhanwarkuan, Indore" -> "Bhanwarkuan". */
+export function areaOf(address: string): string {
+  const parts = address.split(',').map((p) => p.trim()).filter(Boolean);
+  return parts.length >= 3 ? parts[parts.length - 2] : '';
+}
+
+export function businessLine(loan: { businessType: string; address: string }): string {
+  return [loan.businessType, areaOf(loan.address)].filter(Boolean).join(' · ');
 }
 
 export function formatPct(x: number, digits = 0): string {
