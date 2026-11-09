@@ -184,18 +184,21 @@ describe('offline sync', () => {
 
   it('a promise creates a tracked promise and rescoring lowers risk', async () => {
     const rahul = await login('rahul@demo.in');
-    const before = ((await rahul.get('/api/loans/LN-10293')).body as LoanDetailResponse).loan.score!.probability;
+    const list = (await rahul.get('/api/officer/today')).body as TodayResponse;
+    const loan = list.loans.find((l) => !l.openPromise)!;
+    const before = loan.score!.probability;
     const res = (
       await rahul.post('/api/sync/attempts').send({
-        items: [attempt({ outcome: 'promise', amount: 28000, promiseDate: '2026-11-12', note: null })],
+        items: [attempt({ loanId: loan.id, outcome: 'promise', amount: loan.emi, promiseDate: '2026-11-12', note: null })],
       })
     ).body as SyncResponse;
     expect(res.results[0].status).toBe('accepted');
-    const detail = (await rahul.get('/api/loans/LN-10293')).body as LoanDetailResponse;
+    const detail = (await rahul.get(`/api/loans/${loan.id}`)).body as LoanDetailResponse;
     expect(detail.loan.openPromise?.promiseDate).toBe('2026-11-12');
     expect(detail.loan.score!.probability).toBeLessThan(before);
+    expect(detail.loan.score!.reasons.map((r) => r.text).join(' ')).toContain('12 Nov');
     const promises = (await rahul.get('/api/promises?status=upcoming')).body as PromisesResponse;
-    expect(promises.promises.some((p) => p.loanId === 'LN-10293' && p.promiseDate === '2026-11-12')).toBe(true);
+    expect(promises.promises.some((p) => p.loanId === loan.id && p.promiseDate === '2026-11-12')).toBe(true);
   });
 
   it('validates outcomes: paid needs an amount within the balance; promise date within 30 days; dispute needs a note', async () => {

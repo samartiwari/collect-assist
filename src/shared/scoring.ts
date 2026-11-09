@@ -156,6 +156,8 @@ export function expectedLoss(probability: number, outstanding: number): number {
 // ---------- reasons ----------
 
 const lakh = (n: number) => `₹${(n / 100_000).toFixed(1)} L`;
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const shortDate = (ymd: string | null) => (ymd ? `${Number(ymd.slice(8, 10))} ${MONTHS[Number(ymd.slice(5, 7)) - 1]}` : '');
 
 function reasonText(code: string, dir: 'up' | 'down', input: FeatureInput, x: FeatureVector): [string, string] {
   switch (code) {
@@ -192,7 +194,7 @@ function reasonText(code: string, dir: 'up' | 'down', input: FeatureInput, x: Fe
         : [`Smaller balance: ${lakh(input.outstanding)} outstanding`, `कम बकाया राशि: ${lakh(input.outstanding)}`];
     case 'openPromise':
       return x.openPromise
-        ? [`Has a promise to pay on ${input.openPromiseDate}`, `${input.openPromiseDate} को भुगतान का वादा है`]
+        ? [`Has a promise to pay on ${shortDate(input.openPromiseDate)}`, `${shortDate(input.openPromiseDate)} को भुगतान का वादा है`]
         : ['No promise to pay on record', 'भुगतान का कोई वादा दर्ज नहीं'];
     default:
       return [code, code];
