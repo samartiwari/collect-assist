@@ -1,0 +1,20 @@
+# Render Blueprint: one web service that serves the API and the built app.
+# The SQLite file lives on the instance disk. On the free plan it resets on redeploy
+# or restart, and the server reloads the demo data automatically when the database is empty.
+services:
+  - type: web
+    name: collect-assist
+    runtime: node
+    plan: free
+    buildCommand: npm ci --include=dev && npm run build
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_VERSION
+        value: 20.18.0
+      - key: JWT_SECRET
+        generateValue: true
+      - key: DEMO_MODE
+        value: "true"
+      - key: DATABASE_PATH
+        value: ./data/collect.db
