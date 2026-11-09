@@ -51,7 +51,16 @@ export function createApp(db: DB, cfg: AppConfig & { staticDir?: string }) {
   });
 
   if (cfg.staticDir && fs.existsSync(cfg.staticDir)) {
-    app.use(express.static(cfg.staticDir, { index: false, maxAge: '1h' }));
+    app.use(
+      express.static(cfg.staticDir, {
+        index: false,
+        maxAge: '1h',
+        // The service worker and app entry must revalidate, or phones keep an old version.
+        setHeaders: (res, file) => {
+          if (/(sw\.js|workbox-.*\.js|index\.html|manifest\.webmanifest)$/.test(file)) res.setHeader('Cache-Control', 'no-cache');
+        },
+      }),
+    );
     app.get('*', (_req, res) => res.sendFile(path.join(cfg.staticDir!, 'index.html')));
   }
 
