@@ -165,37 +165,41 @@ function reasonText(code: string, dir: 'up' | 'down', input: FeatureInput, x: Fe
       const left = 31 - input.dpd;
       if (input.dpd >= 21)
         return [
-          `${input.dpd} days past due: ${left} ${left === 1 ? 'day' : 'days'} from rolling into 31–60`,
-          `${input.dpd} दिन बकाया: 31–60 में जाने से ${left} दिन दूर`,
+          `${input.dpd} days overdue, rolls into 31+ in ${left} ${left === 1 ? 'day' : 'days'}`,
+          `${input.dpd} दिन बकाया, ${left} दिन में 31+ में चला जाएगा`,
         ];
       return dir === 'up'
-        ? [`${input.dpd} days past due`, `${input.dpd} दिन से बकाया`]
-        : [`Only ${input.dpd} days past due`, `सिर्फ़ ${input.dpd} दिन से बकाया`];
+        ? [`${input.dpd} days overdue`, `${input.dpd} दिन से बकाया`]
+        : [`Only ${input.dpd} days overdue`, `सिर्फ़ ${input.dpd} दिन से बकाया`];
     }
     case 'brokenPromises': {
       const n = input.brokenPromises90d;
-      return n > 0
-        ? [`Broke ${n} promise${n > 1 ? 's' : ''} to pay in the last 90 days`, `पिछले 90 दिनों में ${n} वादा तोड़ा`]
-        : ['No broken promises in the last 90 days', 'पिछले 90 दिनों में कोई वादा नहीं तोड़ा'];
+      if (n === 0) return ['No broken promises in 3 months', '3 महीनों में कोई वादा नहीं टूटा'];
+      return n === 1
+        ? ['Broke a promise to pay in the last 3 months', 'पिछले 3 महीनों में एक वादा तोड़ा']
+        : [`Broke ${n} promises to pay in the last 3 months`, `पिछले 3 महीनों में ${n} वादे तोड़े`];
     }
     case 'paidRatio3m': {
       const pct = Math.round(Math.min(x.paidRatio3m, 1) * 100);
-      return [`Paid ${pct}% of dues in the last 3 months`, `पिछले 3 महीनों में ${pct}% किस्त भरी`];
+      if (dir === 'up') return [`Paid only ${pct}% of dues in 3 months`, `3 महीनों में सिर्फ़ ${pct}% किस्त भरी`];
+      return pct >= 95
+        ? ['Kept up with dues for 3 months', '3 महीनों से किस्त समय पर']
+        : [`Paid ${pct}% of dues in 3 months`, `3 महीनों में ${pct}% किस्त भरी`];
     }
     case 'daysSincePayment': {
       const d = x.daysSincePayment;
       return dir === 'up'
-        ? [`No payment for ${d} days`, `${d} दिन से कोई भुगतान नहीं`]
-        : [`Last paid ${d} days ago`, `आख़िरी भुगतान ${d} दिन पहले`];
+        ? [`No payment in ${d} days`, `${d} दिन से कोई भुगतान नहीं`]
+        : [`Last paid ${d} days ago`, `${d} दिन पहले भुगतान किया`];
     }
     case 'logOutstanding':
       return dir === 'up'
-        ? [`Large balance: ${lakh(input.outstanding)} outstanding`, `बड़ी बकाया राशि: ${lakh(input.outstanding)}`]
-        : [`Smaller balance: ${lakh(input.outstanding)} outstanding`, `कम बकाया राशि: ${lakh(input.outstanding)}`];
+        ? [`Large balance of ${lakh(input.outstanding)}`, `बड़ी बकाया राशि ${lakh(input.outstanding)}`]
+        : [`Small balance of ${lakh(input.outstanding)}`, `कम बकाया राशि ${lakh(input.outstanding)}`];
     case 'openPromise':
       return x.openPromise
-        ? [`Has a promise to pay on ${shortDate(input.openPromiseDate)}`, `${shortDate(input.openPromiseDate)} को भुगतान का वादा है`]
-        : ['No promise to pay on record', 'भुगतान का कोई वादा दर्ज नहीं'];
+        ? [`Promised to pay on ${shortDate(input.openPromiseDate)}`, `${shortDate(input.openPromiseDate)} को भुगतान का वादा`]
+        : ['Has not promised a date yet', 'अभी तक भुगतान की तारीख़ नहीं दी'];
     default:
       return [code, code];
   }

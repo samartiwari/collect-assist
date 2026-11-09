@@ -48,19 +48,21 @@ const TARGET_RATES: Record<string, number[]> = {
 };
 
 const PREFIXES = ['Malwa', 'Ahilya', 'Narmada', 'Kshipra', 'Vindhya', 'Shree Sai', 'Rajwada', 'Holkar', 'Sanwer', 'Annapurna', 'Gomti', 'Mahakal', 'Satpura', 'Chambal', 'Navrang', 'Prakash', 'Saraswati', 'Omkar'];
+// [key, what the business does, name endings]. Names are built as "<prefix> <ending>",
+// e.g. "Narmada Masala Udyog", the way small Indore businesses are usually named.
 const TYPES = [
-  ['Packaging', 'packaging unit'],
-  ['Fertiliser', 'fertiliser shop'],
-  ['Printing', 'printing press'],
-  ['Auto parts', 'auto parts'],
-  ['Garments', 'garment unit'],
-  ['Spices', 'spice trader'],
-  ['Plastics', 'plastic moulding'],
-  ['Hardware', 'hardware store'],
-  ['Namkeen', 'namkeen maker'],
-  ['Furniture', 'furniture workshop'],
-  ['Electricals', 'electrical traders'],
-  ['Textiles', 'textile trader'],
+  ['Packaging', 'Packaging unit', ['Packaging Works', 'Packers', 'Poly Packs']],
+  ['Fertiliser', 'Fertiliser shop', ['Krishi Kendra', 'Fertilisers', 'Agro Agency']],
+  ['Printing', 'Printing press', ['Printers', 'Offset Press', 'Graphics']],
+  ['Auto parts', 'Auto parts dealer', ['Auto Parts', 'Auto Components', 'Motors']],
+  ['Garments', 'Garment unit', ['Garments', 'Apparels', 'Fashions']],
+  ['Spices', 'Spice trader', ['Masala Udyog', 'Spices', 'Traders']],
+  ['Plastics', 'Plastic moulding', ['Plastics', 'Polymers', 'Moulders']],
+  ['Hardware', 'Hardware store', ['Hardware', 'Iron Store', 'Sanitary Mart']],
+  ['Namkeen', 'Namkeen maker', ['Namkeen', 'Foods', 'Snacks']],
+  ['Furniture', 'Furniture workshop', ['Furniture', 'Wood Works', 'Interiors']],
+  ['Electricals', 'Electrical traders', ['Electricals', 'Electric Co.', 'Switchgear']],
+  ['Textiles', 'Textile trader', ['Textiles', 'Cloth Store', 'Fabrics']],
 ] as const;
 
 // Ground truth used only to generate history. The model never sees these weights.
@@ -185,12 +187,16 @@ export function seed(db: DB, opts: { now: Date; rngSeed?: number }) {
       const pin = (fixed?.pincode as string) ?? pick(rngLoans, o.pins);
       const geo = pincodeCentroid(pin)!;
       let name = '';
-      let type: readonly [string, string] = pick(rngLoans, TYPES);
+      let prefix = '';
+      let type: (typeof TYPES)[number] = pick(rngLoans, TYPES);
       do {
         type = pick(rngLoans, TYPES);
-        name = `${pick(rngLoans, PREFIXES)} ${type[0]}`;
+        prefix = pick(rngLoans, PREFIXES);
+        name = `${prefix} ${type[0]}`;
       } while (usedNames.has(name));
       usedNames.add(name);
+      // The ending is derived (not drawn), so the random sequence and the scores stay the same.
+      const displayName = `${prefix} ${type[2][PREFIXES.indexOf(prefix) % type[2].length]}`;
       let id = fixed?.id;
       while (!id || (usedIds.has(id) && !fixed)) {
         id = `LN-${10000 + Math.floor(rngLoans() * 4000)}`;
@@ -201,8 +207,8 @@ export function seed(db: DB, opts: { now: Date; rngSeed?: number }) {
       const lng = geo.lng + (rngLoans() - 0.5) * 0.02;
       const row = {
         id,
-        borrower_name: `${name} (${type[1]})`,
-        business_type: type[0],
+        borrower_name: displayName,
+        business_type: type[1],
         phone: `+91 90000 ${id.slice(3).padStart(5, '0')}`,
         address: `${1 + Math.floor(rngLoans() * 180)}, ${geo.area}, ${o.branch === 'IND' ? 'Indore' : o.branch === 'PTP' ? 'Pithampur' : 'Dewas'}`,
         pincode: pin,
@@ -227,17 +233,17 @@ export function seed(db: DB, opts: { now: Date; rngSeed?: number }) {
     const officer = (id: string) => OFFICERS.find((o) => o.id === id)!;
     // The three sample rows from the brief, as given.
     addLoan(officer('u-rahul'), {
-      id: 'LN-10293', borrower_name: 'Company B (packaging unit)', business_type: 'Packaging', outstanding: 640000, dpd: 12,
+      id: 'LN-10293', borrower_name: 'Company B (packaging unit)', business_type: 'Packaging unit', outstanding: 640000, dpd: 12,
       emi: 28000, paid_last_3m: 56000, last_payment_date: addDays(today, -24), pincode: '452001',
       address: '14, Rajwada, Indore',
     });
     addLoan(officer('u-neha'), {
-      id: 'LN-10871', borrower_name: 'Company C (fertiliser shop)', business_type: 'Fertiliser', outstanding: 310000, dpd: 27,
+      id: 'LN-10871', borrower_name: 'Company C (fertiliser shop)', business_type: 'Fertiliser shop', outstanding: 310000, dpd: 27,
       emi: 14000, paid_last_3m: 14000, last_payment_date: addDays(today, -52), pincode: '452010',
       address: '7, Vijay Nagar, Indore',
     });
     addLoan(officer('u-imran'), {
-      id: 'LN-11930', borrower_name: 'Company D (printing press)', business_type: 'Printing', outstanding: 220000, dpd: 19,
+      id: 'LN-11930', borrower_name: 'Company D (printing press)', business_type: 'Printing press', outstanding: 220000, dpd: 19,
       emi: 10000, paid_last_3m: 20000, last_payment_date: addDays(today, -33), pincode: '452015',
       address: 'Plot 22, Sanwer Road Sector F, Indore',
     });
@@ -247,7 +253,7 @@ export function seed(db: DB, opts: { now: Date; rngSeed?: number }) {
     }
     // Two loans in an uncovered pincode, waiting for manual assignment.
     insLoan.run({
-      id: 'LN-13901', borrower_name: 'Satpura Ceramics (tile dealer)', business_type: 'Ceramics', phone: '+91 90000 13901',
+      id: 'LN-13901', borrower_name: 'Satpura Ceramics', business_type: 'Tile dealer', phone: '+91 90000 13901',
       address: '3, Mhow Road, Indore', pincode: '453441', lat: 22.5536, lng: 75.7637, branch_id: 'IND', outstanding: 410000,
       emi: 18500, dpd: 9, last_payment_date: addDays(today, -21), paid_last_3m: 37000, officer_id: null, updated_at: ts,
     });

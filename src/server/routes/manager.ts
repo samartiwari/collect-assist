@@ -117,12 +117,13 @@ export function managerRoutes(db: DB): Router {
             .join(','),
         );
       });
-      const kinds = ['Garment unit', 'Auto parts', 'Printing press', 'Spice trader', 'Plastic moulding', 'Hardware store'];
+      const kinds = ['Garment unit', 'Auto parts dealer', 'Printing press', 'Spice trader', 'Plastic moulding', 'Hardware store'];
+      const newNames = ['Bhawani Garments', 'Sai Kripa Auto Parts', 'Shubh Labh Printers', 'Maa Narmada Masala Udyog', 'Patidar Polymers', 'Jain Hardware'];
       for (let i = 0; i < 6; i++) {
         const pin = pins[i % Math.max(pins.length, 1)]?.pincode ?? '452001';
         const id = `LN-2${String(9000 + i)}`;
         lines.push(
-          [id, `New Borrower ${i + 1} (${kinds[i].toLowerCase()})`, kinds[i], `+91 90000 2${String(9000 + i)}`, `Shop ${i + 3}, Main Road`, pin, 150000 + i * 45000, 9000 + i * 1500, 3 + i * 4, istDate(new Date(Date.now() - (20 + i * 4) * 864e5)), 18000 + i * 3000]
+          [id, newNames[i], kinds[i], `+91 90000 2${String(9000 + i)}`, `Shop ${i + 3}, Main Road, Indore`, pin, 150000 + i * 45000, 9000 + i * 1500, 3 + i * 4, istDate(new Date(Date.now() - (20 + i * 4) * 864e5)), 18000 + i * 3000]
             .map(esc)
             .join(','),
         );

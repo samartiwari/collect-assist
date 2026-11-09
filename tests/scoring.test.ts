@@ -113,7 +113,7 @@ describe('scoreLoan', () => {
   it('puts the strongest risk driver first', () => {
     const s = scoreLoan(model, { ...base, dpd: 29, brokenPromises90d: 0 }, '2026-11-09T05:00:00.000Z');
     expect(s.reasons[0].code).toBe('dpd');
-    expect(s.reasons[0].text).toContain('29 days past due');
+    expect(s.reasons[0].text).toContain('29 days overdue, rolls into 31+ in 2 days');
   });
 
   it('explains when a promise lowers the risk', () => {
