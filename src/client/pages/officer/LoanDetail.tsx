@@ -23,6 +23,9 @@ import { homePath, useAuth } from '../../lib/auth';
 import { errorMessage, isUnreachable, useApi, useOutbox } from '../../lib/hooks';
 import { formatDateMedium, formatDateShort, formatInstant, useT, type MsgKey } from '../../lib/i18n';
 import { cachedToday } from '../../lib/outbox';
+import { now } from '../../lib/clock';
+import { fillTemplate } from '../../../shared/reminders';
+import { istDate } from '../../../shared/time';
 import { LogOutcomeSheet } from './LogOutcomeSheet';
 
 type DetailState =
@@ -240,7 +243,7 @@ function DetailBody({ data, offline, isOfficer, pending, onCall, onLog, onMessag
           <p className="hint">
             <Icon name="info" size={14} /> {t('rem.simulated')}
           </p>
-          {isOfficer && <Composer loanId={loan.id} windowOpen={w.open} onSent={onMessageSent} />}
+          {isOfficer && <Composer loan={loan} windowOpen={w.open} onSent={onMessageSent} />}
           <MessageList messages={data.messages} />
         </section>
       )}
@@ -302,7 +305,11 @@ function ScoreCard({ score, isOfficer }: { score: LoanScore | null; isOfficer: b
       )}
 
       <p className="score-advisory">{isOfficer ? t('detail.advisory') : t('detail.advisoryManager')}</p>
-      <p className="tiny muted">{t('detail.model', { v: score.modelVersion, time: formatInstant(score.scoredAt, lang) })}</p>
+      <p className="tiny muted">
+        {isOfficer
+          ? t('detail.updated', { time: formatInstant(score.scoredAt, lang) })
+          : t('detail.model', { v: score.modelVersion, time: formatInstant(score.scoredAt, lang) })}
+      </p>
     </section>
   );
 }
@@ -445,12 +452,26 @@ function AttemptTitle({ outcome, amount, promiseDate }: { outcome: MsgKey; amoun
 // ---------- reminders ----------
 
 interface ComposerProps {
-  loanId: string;
+  loan: LoanCard;
   windowOpen: boolean;
   onSent: (m: MessageRow) => void;
 }
 
-function Composer({ loanId, windowOpen, onSent }: ComposerProps) {
+/** The template as the borrower would read it, with this loan's values filled in. */
+function previewText(body: string, loan: LoanCard): string {
+  const due = loan.openPromise?.promiseDate ?? istDate(now());
+  return fillTemplate(body, {
+    borrower: loan.borrowerName,
+    loanId: loan.id,
+    amount: (loan.openPromise?.amount ?? loan.emi).toLocaleString('en-IN'),
+    date: new Date(`${due}T00:00:00Z`).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', timeZone: 'UTC' }),
+    officer: loan.officerName ?? '',
+    dpd: loan.dpd,
+  });
+}
+
+function Composer({ loan, windowOpen, onSent }: ComposerProps) {
+  const loanId = loan.id;
   const { t, lang } = useT();
   const templates = useApi<{ templates: TemplateRow[] }>('/templates');
   const options = useMemo(() => {
@@ -540,7 +561,7 @@ function Composer({ loanId, windowOpen, onSent }: ComposerProps) {
             </select>
             {template && (
               <p className="template-preview" lang={template.lang}>
-                {template.body}
+                {previewText(template.body, loan)}
               </p>
             )}
           </div>

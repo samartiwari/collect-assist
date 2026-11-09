@@ -9,12 +9,12 @@ import { useT, type MsgKey } from '../lib/i18n';
 
 const DEMO_PASSWORD = 'Demo@1234';
 
-const DEMO_ACCOUNTS: { email: string; role: MsgKey; note?: string }[] = [
-  { email: 'rahul@demo.in', role: 'role.officer', note: 'Indore City' },
-  { email: 'neha@demo.in', role: 'role.officer' },
-  { email: 'imran@demo.in', role: 'role.officer' },
-  { email: 'manager.indore@demo.in', role: 'role.manager' },
-  { email: 'head@demo.in', role: 'role.head' },
+const DEMO_ACCOUNTS: { email: string; name: string; role: MsgKey; note: string }[] = [
+  { email: 'rahul@demo.in', name: 'Rahul Chouhan', role: 'role.officer', note: 'Indore City · हिन्दी' },
+  { email: 'neha@demo.in', name: 'Neha Solanki', role: 'role.officer', note: 'Indore City · English' },
+  { email: 'imran@demo.in', name: 'Imran Qureshi', role: 'role.officer', note: 'Indore City' },
+  { email: 'manager.indore@demo.in', name: 'Kavita Jain', role: 'role.manager', note: 'Indore City' },
+  { email: 'head@demo.in', name: 'Anil Mehta', role: 'role.head', note: 'All branches' },
 ];
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -169,9 +169,9 @@ export default function Login() {
                 aria-pressed={email === a.email}
                 onClick={() => fillDemo(a.email)}
               >
+                <span className="demo-chip-name">{a.name}</span>
                 <span className="demo-chip-role">
-                  {t(a.role)}
-                  {a.note ? ` · ${a.note}` : ''}
+                  {t(a.role)} · {a.note}
                 </span>
                 <span className="demo-chip-email">{a.email}</span>
               </button>

@@ -235,7 +235,7 @@ main:focus { outline: none; }
 .demo-chip:focus-visible { outline: 3px solid rgba(20, 83, 45, 0.28); outline-offset: 1px; }
 .demo-chip[aria-pressed='true'] { border-color: var(--accent); background: var(--accent-soft); }
 .demo-chip-role { font-size: 12.5px; font-weight: 600; color: var(--muted); }
-.demo-chip-email { font-family: var(--mono); font-size: 13.5px; font-weight: 600; color: var(--ink); word-break: break-all; }
+.demo-chip-email { font-family: var(--mono); font-size: 12.5px; color: var(--muted); word-break: break-all; }
 .login-footer { display: flex; gap: 6px; align-items: flex-start; }
 .login-footer .icon { flex: none; margin-top: 2px; }
 
@@ -516,3 +516,4 @@ main:focus { outline: none; }
 
 /* Language lives in the account menu: set once, not needed in the field every minute. */
 .menu-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 4px 2px; }
+.demo-chip-name { font-weight: 650; color: var(--ink); }
