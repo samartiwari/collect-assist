@@ -127,8 +127,13 @@ function monthsBefore(month: string, n: number): string[] {
   return out;
 }
 
-export function seed(db: DB, opts: { now: Date }) {
-  const rng = mulberry32(20261109);
+export function seed(db: DB, opts: { now: Date; rngSeed?: number }) {
+  // Separate random streams, so the model and its back-test come out the same whatever
+  // time of day the seed runs (only the demo activity depends on the current time).
+  const base = opts.rngSeed ?? 99;
+  const rngLoans = mulberry32(base);
+  const rngActivity = mulberry32(base + 1);
+  const rngHistory = mulberry32(base + 2);
   const now = opts.now;
   const today = istDate(now);
   const ts = now.toISOString();
@@ -175,31 +180,31 @@ export function seed(db: DB, opts: { now: Date }) {
     const loansByOfficer = new Map<string, { id: string; lat: number; lng: number; emi: number; risk: number }[]>();
 
     const addLoan = (o: (typeof OFFICERS)[number], fixed?: Partial<Record<string, unknown>> & { id: string }) => {
-      const risk = gaussian(rng);
-      const d = drawLoan(rng, today, risk, true);
-      const pin = (fixed?.pincode as string) ?? pick(rng, o.pins);
+      const risk = gaussian(rngLoans);
+      const d = drawLoan(rngLoans, today, risk, true);
+      const pin = (fixed?.pincode as string) ?? pick(rngLoans, o.pins);
       const geo = pincodeCentroid(pin)!;
       let name = '';
-      let type: readonly [string, string] = pick(rng, TYPES);
+      let type: readonly [string, string] = pick(rngLoans, TYPES);
       do {
-        type = pick(rng, TYPES);
-        name = `${pick(rng, PREFIXES)} ${type[0]}`;
+        type = pick(rngLoans, TYPES);
+        name = `${pick(rngLoans, PREFIXES)} ${type[0]}`;
       } while (usedNames.has(name));
       usedNames.add(name);
       let id = fixed?.id;
       while (!id || (usedIds.has(id) && !fixed)) {
-        id = `LN-${10000 + Math.floor(rng() * 4000)}`;
+        id = `LN-${10000 + Math.floor(rngLoans() * 4000)}`;
         if (usedIds.has(id)) id = undefined;
       }
       usedIds.add(id);
-      const lat = geo.lat + (rng() - 0.5) * 0.02;
-      const lng = geo.lng + (rng() - 0.5) * 0.02;
+      const lat = geo.lat + (rngLoans() - 0.5) * 0.02;
+      const lng = geo.lng + (rngLoans() - 0.5) * 0.02;
       const row = {
         id,
         borrower_name: `${name} (${type[1]})`,
         business_type: type[0],
         phone: `+91 90000 ${id.slice(3).padStart(5, '0')}`,
-        address: `${1 + Math.floor(rng() * 180)}, ${geo.area}, ${o.branch === 'IND' ? 'Indore' : o.branch === 'PTP' ? 'Pithampur' : 'Dewas'}`,
+        address: `${1 + Math.floor(rngLoans() * 180)}, ${geo.area}, ${o.branch === 'IND' ? 'Indore' : o.branch === 'PTP' ? 'Pithampur' : 'Dewas'}`,
         pincode: pin,
         lat,
         lng,
@@ -266,33 +271,33 @@ export function seed(db: DB, opts: { now: Date }) {
       for (let back = 7; back >= 0; back--) {
         const day = addDays(today, -back);
         if (new Date(`${day}T00:00:00Z`).getUTCDay() === 0) continue; // Sunday off
-        const count = back === 0 ? 5 + Math.floor(rng() * 4) : 7 + Math.floor(rng() * 6);
-        const order = [...loans].sort(() => rng() - 0.5).slice(0, count);
-        let minute = 9 * 60 + 15 + Math.floor(rng() * 30);
+        const count = back === 0 ? 5 + Math.floor(rngActivity() * 4) : 7 + Math.floor(rngActivity() * 6);
+        const order = [...loans].sort(() => rngActivity() - 0.5).slice(0, count);
+        let minute = 9 * 60 + 15 + Math.floor(rngActivity() * 30);
         for (const loan of order) {
-          minute += 25 + Math.floor(rng() * 35);
+          minute += 25 + Math.floor(rngActivity() * 35);
           if (minute > 18 * 60 + 40) break;
           const at = istInstant(day, Math.floor(minute / 60), minute % 60);
           if (at.getTime() > now.getTime()) break;
-          const kind = rng() < 0.6 ? 'visit' : 'call';
-          const r = rng();
+          const kind = rngActivity() < 0.6 ? 'visit' : 'call';
+          const r = rngActivity();
           let outcome: 'paid' | 'promise' | 'not_reachable' | 'dispute' =
             r < 0.2 ? 'paid' : r < 0.52 ? 'promise' : r < 0.94 ? 'not_reachable' : 'dispute';
           if (outcome === 'promise' && promised.has(loan.id)) outcome = 'not_reachable';
-          const offline = rng() < 0.22;
-          const lateSync = offline && rng() < 0.3;
+          const offline = rngActivity() < 0.22;
+          const lateSync = offline && rngActivity() < 0.3;
           const receivedAt = lateSync
-            ? istInstant(addDays(day, 1), 8, 5 + Math.floor(rng() * 50))
-            : new Date(at.getTime() + (offline ? (40 + rng() * 200) * 60_000 : 3_000 + rng() * 8_000));
-          const farAway = rng() < 0.1;
+            ? istInstant(addDays(day, 1), 8, 5 + Math.floor(rngActivity() * 50))
+            : new Date(at.getTime() + (offline ? (40 + rngActivity() * 200) * 60_000 : 3_000 + rngActivity() * 8_000));
+          const farAway = rngActivity() < 0.1;
           const jitter = farAway ? 0.02 : 0.0018;
           const id = crypto.randomUUID();
           let amount: number | null = null;
           let promiseDate: string | null = null;
-          if (outcome === 'paid') amount = Math.round((loan.emi * (0.5 + rng() * 0.5)) / 500) * 500;
+          if (outcome === 'paid') amount = Math.round((loan.emi * (0.5 + rngActivity() * 0.5)) / 500) * 500;
           if (outcome === 'promise') {
             amount = loan.emi;
-            promiseDate = addDays(day, 1 + Math.floor(rng() * 6));
+            promiseDate = addDays(day, 1 + Math.floor(rngActivity() * 6));
           }
           insAttempt.run({
             id,
@@ -303,10 +308,10 @@ export function seed(db: DB, opts: { now: Date }) {
             status: 'accepted',
             amount,
             promise_date: promiseDate,
-            note: outcome === 'not_reachable' || outcome === 'dispute' ? pick(rng, notes[outcome]) : null,
-            lat: kind === 'visit' ? loan.lat + (rng() - 0.5) * jitter : null,
-            lng: kind === 'visit' ? loan.lng + (rng() - 0.5) * jitter : null,
-            accuracy_m: kind === 'visit' ? Math.round(8 + rng() * 30) : null,
+            note: outcome === 'not_reachable' || outcome === 'dispute' ? pick(rngActivity, notes[outcome]) : null,
+            lat: kind === 'visit' ? loan.lat + (rngActivity() - 0.5) * jitter : null,
+            lng: kind === 'visit' ? loan.lng + (rngActivity() - 0.5) * jitter : null,
+            accuracy_m: kind === 'visit' ? Math.round(8 + rngActivity() * 30) : null,
             occurred_at: at.toISOString(),
             received_at: (receivedAt.getTime() > now.getTime() ? now : receivedAt).toISOString(),
             created_offline: offline ? 1 : 0,
@@ -314,15 +319,15 @@ export function seed(db: DB, opts: { now: Date }) {
           if (outcome === 'promise' && promiseDate) {
             promised.add(loan.id);
             // Lower-risk borrowers keep promises more often.
-            const keeps = promiseDate < today && rng() < 0.55 - loan.risk * 0.15;
+            const keeps = promiseDate < today && rngActivity() < 0.55 - loan.risk * 0.15;
             insPromise.run(crypto.randomUUID(), loan.id, o.id, amount, promiseDate, at.toISOString(),
               keeps ? istInstant(promiseDate, 12).toISOString() : null, id);
           }
         }
         // An occasional blocked attempt after hours, kept for audit.
-        if (back > 0 && rng() < 0.18) {
-          const loan = pick(rng, loans);
-          const at = istInstant(day, 19, 10 + Math.floor(rng() * 40));
+        if (back > 0 && rngActivity() < 0.18) {
+          const loan = pick(rngActivity, loans);
+          const at = istInstant(day, 19, 10 + Math.floor(rngActivity() * 40));
           if (!isContactAllowed(at)) {
             insAttempt.run({
               id: crypto.randomUUID(), loan_id: loan.id, officer_id: o.id, kind: 'call', outcome: null, status: 'blocked',
@@ -357,23 +362,23 @@ export function seed(db: DB, opts: { now: Date }) {
       const size = OFFICERS.filter((o) => o.branch === b.id).reduce((a, o) => a + o.loans, 0);
       months.forEach((month, mi) => {
         const asOf = `${month}-01`;
-        const n = Math.round(size * (1.3 + rng() * 0.3));
+        const n = Math.round(size * (1.3 + rngHistory() * 0.3));
         const obs = Array.from({ length: n }, () => {
-          const risk = gaussian(rng);
-          const d = drawLoan(rng, asOf, risk, false);
-          const broken = rng() < 0.12 + Math.max(0, risk) * 0.12 ? 1 + (rng() < 0.3 ? 1 : 0) : 0;
-          const openPromise = rng() < 0.18 - Math.max(0, risk) * 0.06 ? addDays(asOf, 1 + Math.floor(rng() * 6)) : null;
+          const risk = gaussian(rngHistory);
+          const d = drawLoan(rngHistory, asOf, risk, false);
+          const broken = rngHistory() < 0.12 + Math.max(0, risk) * 0.12 ? 1 + (rngHistory() < 0.3 ? 1 : 0) : 0;
+          const openPromise = rngHistory() < 0.18 - Math.max(0, risk) * 0.06 ? addDays(asOf, 1 + Math.floor(rngHistory() * 6)) : null;
           const input: FeatureInput = {
             dpd: d.dpd, outstanding: d.outstanding, emi: d.emi, paidLast3m: d.paidLast3m, lastPaymentDate: d.lastPaymentDate,
             brokenPromises90d: broken, openPromiseDate: openPromise, asOf,
           };
-          return { input, z: trueLogit(extractFeatures(input).values) + gaussian(rng) * 0.5 };
+          return { input, z: trueLogit(extractFeatures(input).values) + gaussian(rngHistory) * 0.5 };
         });
         // Pick exactly target x n loans to roll, weighted by their true risk, so each month's
         // rate matches the plan while riskier loans are still the ones that roll.
         const c = calibrateOffset(obs.map((o) => o.z), TARGET_RATES[b.id][mi]);
         const k = Math.round(TARGET_RATES[b.id][mi] * n);
-        const keyed = obs.map((o, i) => ({ i, key: Math.pow(rng(), 1 / (1 / (1 + Math.exp(-(o.z + c))))) }));
+        const keyed = obs.map((o, i) => ({ i, key: Math.pow(rngHistory(), 1 / (1 / (1 + Math.exp(-(o.z + c))))) }));
         const rolled = new Set(keyed.sort((a, b2) => b2.key - a.key).slice(0, k).map((x) => x.i));
         obs.forEach((o, i) => {
           const y = rolled.has(i) ? 1 : 0;
