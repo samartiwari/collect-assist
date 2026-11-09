@@ -4,6 +4,8 @@ A field collections app for an MSME lender. Each officer opens the app and sees 
 
 Built for the "MSME lender's field collections app with AI prioritisation" brief (Company A, Indore).
 
+**Live:** https://collect-assist.onrender.com (free hosting: the first load after idle takes ~40 s). Password `Demo@1234` for every account: officer `rahul@demo.in`, manager `manager.indore@demo.in`, head `head@demo.in`.
+
 <p>
   <img src="docs/screenshots/o1-today.png" width="24%" alt="Officer's prioritised list">
   <img src="docs/screenshots/o3-sheet-promise.png" width="24%" alt="Three-tap outcome logging">

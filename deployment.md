@@ -1,7 +1,7 @@
 # CollectAssist: deployment and running guide
 
 - **Repository:** https://github.com/samartiwari/collect-assist
-- **Live app:** _LIVE_URL_ (Render free plan: the first request after 15 idle minutes takes about 30–60 s to wake up)
+- **Live app:** https://collect-assist.onrender.com (Render free plan: the first request after 15 idle minutes takes about 30–60 s to wake up)
 
 ## Demo logins
 
