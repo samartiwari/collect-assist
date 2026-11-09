@@ -4,6 +4,14 @@ A field collections app for an MSME lender. Each officer opens the app and sees 
 
 Built for the "MSME lender's field collections app with AI prioritisation" brief (Company A, Indore).
 
+<p>
+  <img src="docs/screenshots/o1-today.png" width="24%" alt="Officer's prioritised list">
+  <img src="docs/screenshots/o3-sheet-promise.png" width="24%" alt="Three-tap outcome logging">
+  <img src="docs/screenshots/o9-sync-pending.png" width="24%" alt="Offline outbox">
+  <img src="docs/screenshots/c2-blocked-call.png" width="24%" alt="Contact blocked after 7 pm">
+</p>
+<img src="docs/screenshots/m7-head-overview.png" alt="Manager overview with roll rates by branch">
+
 ## What works end to end
 
 | Slice | What it does |
