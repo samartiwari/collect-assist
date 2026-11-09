@@ -322,6 +322,23 @@ describe('CSV import', () => {
   });
 });
 
+describe('unassigned loans', () => {
+  it('lists loans with no officer and lets the manager assign one', async () => {
+    const kavita = await login('manager.indore@demo.in');
+    const list = (await kavita.get('/api/team/unassigned/list')).body as TodayResponse;
+    expect(list.loans.map((l) => l.id)).toContain('LN-13901');
+    expect((await kavita.post('/api/loans/LN-13901/reassign').send({ officerId: 'u-pooja' })).status).toBe(200);
+    const after = (await kavita.get('/api/team/unassigned/list')).body as TodayResponse;
+    expect(after.loans.map((l) => l.id)).not.toContain('LN-13901');
+  });
+
+  it('cannot assign to an officer in another branch', async () => {
+    const head = await login('head@demo.in');
+    const res = await head.post('/api/loans/LN-10293/reassign').send({ officerId: 'u-arjun' });
+    expect(res.status).toBe(422);
+  });
+});
+
 describe('dashboards', () => {
   it('returns monthly roll rates by branch near the 22% baseline', async () => {
     const head = await login('head@demo.in');

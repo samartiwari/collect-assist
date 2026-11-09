@@ -16,7 +16,7 @@ import { requireRole } from '../auth';
 import { now } from '../clock';
 import { AppError, badRequest, notFound, parse, route } from '../http';
 import { commitImport, previewImport, REQUIRED_COLUMNS } from '../services/importer';
-import { assertLoanInScope, officerList } from '../services/loans';
+import { assertLoanInScope, loanCards, officerList, sortForToday } from '../services/loans';
 
 const importSchema = z.object({
   filename: z.string().trim().min(1).max(120),
@@ -304,8 +304,14 @@ export function managerRoutes(db: DB): Router {
     route((req): TodayResponse => {
       const user = requireRole(req, ...roles);
       const officerId = String(req.params.officerId);
-      assertOfficerInScope(db, user, officerId);
       const t = now(db);
+      if (officerId === 'unassigned') {
+        // Loans with no officer (uncovered pincode or a full branch), for manual assignment.
+        const scope = branchScope(user, 'l.branch_id');
+        const loans = sortForToday(loanCards(db, t, `l.officer_id IS NULL AND l.status = 'open' AND ${scope.sql}`, scope.params));
+        return { generatedAt: t.toISOString(), date: istDate(t), officer: { id: 'unassigned', name: 'Unassigned loans' }, loans };
+      }
+      assertOfficerInScope(db, user, officerId);
       const o = db.prepare('SELECT id, name FROM users WHERE id = ?').get(officerId) as { id: string; name: string };
       return { generatedAt: t.toISOString(), date: istDate(t), officer: o, loans: officerList(db, t, officerId) };
     }),
